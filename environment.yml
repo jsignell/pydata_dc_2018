@@ -1,0 +1,14 @@
+name: birds
+channels:
+  - conda-forge
+dependencies:
+  - jupyter
+  - cartopy
+  - pyviz/label/dev::geoviews
+  - pyviz/label/dev::holoviews
+  - pyviz/label/dev::hvplot
+  - intake::intake
+  - numpy
+  - pandas
+  - pyviz/label/dev::panel
+  - xarray

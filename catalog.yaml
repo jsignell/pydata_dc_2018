@@ -30,5 +30,4 @@ sources:
           cmap: 'YlOrRd'
           legend: False
           geo: true
-    
-          
+            
