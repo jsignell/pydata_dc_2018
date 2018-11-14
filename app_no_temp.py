@@ -45,7 +45,7 @@ species_cmap = dict(zip(df.species.cat.categories,
 
 birds = df.hvplot.points('lon', 'lat', color='species', groupby='day', geo=True,
                          cmap=species_cmap, legend=False).options(tools=['tap', 'hover', 'box_select'],
-                                                                  width=500, height=600)
+                                                                  width=400, height=600)
 
 tiles = gts.EsriImagery()
 tiles.extents = df.lon.min(), df.lat.min(), df.lon.max(), df.lat.max()
