@@ -2,8 +2,6 @@ import intake
 import numpy as np
 import pandas as pd
 import hvplot.pandas
-import xarray as xr
-import hvplot.xarray
 
 import holoviews as hv
 from holoviews.streams import Selection1D, Params
@@ -15,7 +13,6 @@ import cartopy.crs as ccrs
 import pyproj
 
 hv.extension('bokeh')
-
 
 df = intake.open_csv('./data/bird_migration/{species}.csv').read()
 
@@ -50,20 +47,6 @@ birds = df.hvplot.points('lon', 'lat', color='species', groupby='day', geo=True,
                          cmap=species_cmap, legend=False).options(tools=['tap', 'hover', 'box_select'], 
                                                                   width=500, height=600)
 
-ds = xr.open_dataset('http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/ncep/air.day.ltm.nc')
-ds = ds.rename(time='day').sel(level=1000)
-ds['day'] = list(range(1,366))
-
-## convert to F
-ds = ds.assign(air_F = (ds['air'] - 273.15) * 9/5 + 32)
-
-ROI = ds.sel(lon=slice(205, 310), lat=slice(75, -55))
-
-grouped_air = (ROI.hvplot.quadmesh('lon', 'lat', 'air_F', groupby='day', geo=True)
-                         .options(height=600, width=500, tools=[])
-                         .redim.range(air_F=(-20, 100)))
-
-
 tiles = gts.EsriImagery()
 tiles.extents = df.lon.min(), df.lat.min(), df.lon.max(), df.lat.max()
 
@@ -83,40 +66,26 @@ def timeseries(species=None, day=None, y='lat'):
     return hv.Overlay(plots).options(width=900, toolbar='below', legend_position='right', legend_offset=(20, 0), label_width=150)
 
 def daily_table(species=None, day=None):
-    def temp_calc(ds, row):
-        lat_lon_day = row[['lat', 'lon', 'day']]
-        return round(ds.sel(**lat_lon_day, method='nearest')['air_F'].item())
     if not species or not day:
-        return hv.Table(pd.DataFrame(columns=['Species', 'Air [F]', 'Speed [km/day]']))
-    
+        return hv.Table(pd.DataFrame(columns=['Species', 'Speed [km/day]']))
     subset = df[df.species.isin(species)]
     subset = subset[subset.day==day]
-    temps = [temp_calc(ds, row) for _, row in subset.iterrows()]
-    
-    return hv.Table(pd.DataFrame({'Species': species, 'Air [F]': temps, 'Speed [km/day]': subset['speed']})).relabel('day: {}'.format(day))
+    return hv.Table(pd.DataFrame({'Species': species, 'Speed [km/day]': subset['speed']})).relabel('day: {}'.format(day))
 
 species = pn.widgets.MultiSelect(options=df.species.cat.categories.tolist())
 day = pn.widgets.Player(value=1, interval=30, length=365, loop_policy='loop', name='day', width=350)
-toggle = pn.widgets.Toggle(name='Air Temperature Layer', active=True)
 
 species_stream = Params(species, ['value'], rename={'value': 'species'})
 day_stream = Params(day, ['value'], rename={'value': 'day'})
-toggle_stream = Params(toggle, ['active'])
 
 def reset(arg=None):
     day_stream.update(value=1)
     species_stream.update(value=[])
-    toggle_stream.update(active=True)
     
 reset_button = pn.widgets.Button(name='Reset')
 reset_button.param.watch(reset, 'clicks')
 
-def toggle_temp(layer, active=True):
-    return layer.options(fill_alpha=int(active))
-
 bird_dmap = birds.clone(streams=[day_stream])
-air_dmap = grouped_air.clone(streams=[day_stream])
-temp_layer = hv.util.Dynamic(air_dmap, operation=toggle_temp, streams=[toggle_stream])
 ts_lat = hv.DynamicMap(lambda species, day: timeseries(species, day, 'lat'), streams=[species_stream, day_stream])
 ts_speed = hv.DynamicMap(lambda species, day: timeseries(species, day, 'speed'), streams=[species_stream, day_stream])
 table = hv.DynamicMap(daily_table, streams=[species_stream, day_stream])
@@ -135,13 +104,12 @@ dashboard = pn.Column(
     pn.Row(
         pn.Column(
             pn.Row(
-                pn.Row(tiles * temp_layer * gv.feature.coastline * bird_dmap)[0][0], 
+                pn.Row(tiles * bird_dmap)[0][0], 
                 pn.Spacer(width=20),
                 pn.Column(
                     '**Day of Year**', day, 
                     '**Species**:',
-                     'This selector does not affect the map. Use plot selectors.', species, 
-                    '**Toggle Air Temp on and off**', toggle,
+                     'This selector does not affect the map. Use plot selectors.', species,
                     'This reset button only resets widgets - otherwise use the plot reset 🔄',
                     reset_button
                 ),
