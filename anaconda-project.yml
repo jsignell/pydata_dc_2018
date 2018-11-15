@@ -12,18 +12,20 @@ env_specs:
     channels:
     - https://conda.anaconda.org/pyviz/label/dev
     - https://conda.anaconda.org/intake
+    - https://conda.anaconda.org/anaconda
     - defaults
     packages:
     - notebook
     - jupyter
-    - ipywidgets>=7.2
+    - ipywidgets=7.4.2
     - bokeh=1.0.0
     - python=3.6
-    - pandas=0.22
-    - param=1.8.1
-    - panel=0.1.2
-    - holoviews=1.11.0a8
-    - geoviews=1.5.4a13
+    - pandas=0.23.4
+    - param=1.8.2a1
+    - panel=0.2.0a8
+    - holoviews=1.11.0a10
+    - geoviews=1.6.0a2
+    - hvplot=0.3.0a5
     - xarray
     - intake=0.2.9
 commands:
@@ -42,3 +44,5 @@ commands:
     env_spec: anaconda50_py36
     unix: panel serve app_no_temp.py
     supports_http_options: true
+variables:
+  MPLBACKEND: Agg

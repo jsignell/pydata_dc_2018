@@ -3,12 +3,26 @@ channels:
   - conda-forge
 dependencies:
   - jupyter
+  - ipywidgets>=7.4.2
   - cartopy
-  - pyviz/label/dev::geoviews
-  - pyviz/label/dev::holoviews
-  - pyviz/label/dev::hvplot
-  - intake::intake
+  - pyviz/label/dev::geoviews=1.6.0a2
+  - pyviz/label/dev::holoviews=1.11.0a10
+  - pyviz/label/dev::hvplot=0.3.0a5
+  - intake::intake=0.2.9
   - numpy
-  - pandas
-  - pyviz/label/dev::panel
+  - pandas>=0.23.4
+  - pyviz/label/dev::panel=0.2.0a8
   - xarray
+
+
+ipywidgets=7.4.2
+    - bokeh=1.0.0
+    - python=3.6
+    - pandas=0.23.4
+    - param=1.8.2a1
+    - panel=0.2.0a8
+    - holoviews=1.11.0a10
+    - geoviews=1.6.0a2
+    - hvplot=0.3.0a5
+    - xarray
+    - intake=0.2.9

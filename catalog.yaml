@@ -3,7 +3,8 @@ sources:
     description: "This dataset is a cleaned composite of citizen science bird observations as described by La Sorte and Fink (2017). The eBird Citizen Science Project is a real-time, on line checklist program launched in 2002 by the Cornell Lab of Ornithology and the National Audubon Society. The observations of each volunteer participant join those of others creating a database of international avian observation events. The dataset contains count data for bird species observed by novice and experienced bird observers alike. Aggregated observation data is available for non-commercial research purposes. eBird data can be used to document the presence or absence of avian species, as well as abundance and distribution at a variety of spatial and temporal scales. The dataset includes spatial, and temporal parameters describing the observation event. The data collection is static, updated annually. La Sorte FA, and Fink D. Projected changes in prevailing winds for transatlantic migratory birds under global warming. Journal of American Ecology 86 (2017): 273-284. La Sorte FA, Fink D, Hochachka WM, Kelling S. 2016 Convergence of broad-scale migration strategies in terrestrial birds. Proc. R. Soc. B 283: 20152588. http://dx.doi.org/10.1098/rspb.2015.2588"
     driver: csv
     args:
-      urlpath: './data/bird_migration/{species}.csv'
+      urlpath: '{{ CATALOG_DIR }}/data/bird_migration/*.csv'
+      path_as_pattern: 'bird_migration/{species}.csv'
     metadata:
       plot:
         kind: points
@@ -13,7 +14,6 @@ sources:
         y: lat
       plots:
         one_bird_point:
-          kind: points
           groupby:
             - species
             - day
