@@ -63,7 +63,7 @@ def timeseries(species=None, day=None, y='lat'):
         plots.extend([v.hvplot('day', y, color=species_cmap[k]).relabel(k) for k, v in gb])
     if day:
         plots.append(hv.VLine(day).options(color='black'))
-    return hv.Overlay(plots).options(width=900, toolbar='below', legend_position='right', legend_offset=(20, 0), label_width=150)
+    return hv.Overlay(plots).options(width=900, height=250, toolbar='below', legend_position='right', legend_offset=(20, 0), label_width=150)
 
 def daily_table(species=None, day=None):
     if not species or not day:
