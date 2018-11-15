@@ -67,13 +67,13 @@ def timeseries(species=None, day=None, y='lat'):
 
 def daily_table(species=None, day=None):
     if not species or not day:
-        return hv.Table(pd.DataFrame(columns=['Species', 'Speed [km/day]']))
+        return hv.Table(pd.DataFrame(columns=['Species', 'Speed [km/day]'])).relabel('No species selected')
     subset = df[df.species.isin(species)]
     subset = subset[subset.day==day]
     return hv.Table(pd.DataFrame({'Species': species, 'Speed [km/day]': subset['speed']})).relabel('day: {}'.format(day))
 
-species = pn.widgets.MultiSelect(options=df.species.cat.categories.tolist())
-day = pn.widgets.IntSlider(start=1, end=365, value=1, name='day')
+species = pn.widgets.MultiSelect(options=df.species.cat.categories.tolist(), size=10)
+day = pn.widgets.Player(value=1, start=1, end=365, step=5, loop_policy='loop', name='day', width=350)
 
 species_stream = Params(species, ['value'], rename={'value': 'species'})
 day_stream = Params(day, ['value'], rename={'value': 'day'})
