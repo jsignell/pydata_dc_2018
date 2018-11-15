@@ -49,11 +49,9 @@ species_cmap = dict(zip(df.species.cat.categories,
                          for _, row in colors.iterrows()]))
 
 birds = df.hvplot.points('lon', 'lat', color='species', groupby='day', geo=True,
-                         cmap=species_cmap, legend=False).options(tools=['tap', 'hover', 'box_select'],
-                                                                  width=500, height=600)
-data_url = 'http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/ncep/air.day.ltm.nc'
+                         cmap=species_cmap, legend=False, width=400, height=600,
+                         size=100).options(tools=['tap', 'hover', 'box_select'])
 
-# I downloaded the file locally because I was hitting rate limits. Just comment out this line
 data_url = 'http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/ncep/air.day.ltm.nc'
 
 # I downloaded the file locally because I was hitting rate limits.
@@ -78,19 +76,18 @@ grouped_air = (ROI.hvplot.quadmesh('lon', 'lat', 'air_F', groupby='day', geo=Tru
 tiles = gts.EsriImagery()
 tiles.extents = df.lon.min(), df.lat.min(), df.lon.max(), df.lat.max()
 
-def timeseries(species=None, day=None, y='lat'):
+def timeseries(species=None, y='lat'):
+    data = df[df.species.isin(species)] if species else df
     plots = [
-        (df.groupby(['day', 'species'], observed=True)[y]
+        (data.groupby(['day', 'species'], observed=True)[y]
             .mean()
             .groupby('day').agg([np.min, np.max])
             .hvplot.area('day', 'amin', 'amax', alpha=0.2, fields={'amin': y}))]
-    if not species:
-        plots.append(df.groupby('day')[y].mean().hvplot().relabel('mean'))
+    if not species or len(species) > 7:
+        plots.append(data.groupby('day')[y].mean().hvplot().relabel('mean'))
     else:
-        gb = df[df.species.isin(species)].groupby('species', observed=True)
+        gb = data.groupby('species', observed=True)
         plots.extend([v.hvplot('day', y, color=species_cmap[k]).relabel(k) for k, v in gb])
-    if day:
-        plots.append(hv.VLine(day).options(color='black'))
     return hv.Overlay(plots).options(width=900, height=250, toolbar='below', legend_position='right', legend_offset=(20, 0), label_width=150)
 
 def daily_table(species=None, day=None):
@@ -110,15 +107,18 @@ def daily_table(species=None, day=None):
 species = pn.widgets.MultiSelect(options=df.species.cat.categories.tolist(), size=10)
 day = pn.widgets.Player(value=1, start=1, end=365, step=5, loop_policy='loop', name='day', width=350)
 toggle = pn.widgets.Toggle(name='Air Temperature Layer', active=True)
+highlight = pn.widgets.Toggle(name='Highlight Birds', active=False)
 
 species_stream = Params(species, ['value'], rename={'value': 'species'})
 day_stream = Params(day, ['value'], rename={'value': 'day'})
 toggle_stream = Params(toggle, ['active'])
+highlight_stream = Params(highlight, ['active'])
 
 def reset(arg=None):
     day_stream.update(value=1)
     species_stream.update(value=[])
     toggle_stream.update(active=True)
+    highlight_stream.update(active=False)
 
 reset_button = pn.widgets.Button(name='Reset')
 reset_button.param.watch(reset, 'clicks')
@@ -126,11 +126,15 @@ reset_button.param.watch(reset, 'clicks')
 def toggle_temp(layer, active=True):
     return layer.options(fill_alpha=int(active))
 
-bird_dmap = birds.clone(streams=[day_stream])
+def do_highlight(points, active=True):
+    return points.options(line_alpha=(0.5 if active else 0), selection_line_alpha=active)
+
+bird_dmap = hv.util.Dynamic(birds.clone(streams=[day_stream]).options(line_color='white'),
+                            operation=do_highlight, streams=[highlight_stream])
 air_dmap = grouped_air.clone(streams=[day_stream])
 temp_layer = hv.util.Dynamic(air_dmap, operation=toggle_temp, streams=[toggle_stream])
-ts_lat = hv.DynamicMap(lambda species, day: timeseries(species, day, 'lat'), streams=[species_stream, day_stream])
-ts_speed = hv.DynamicMap(lambda species, day: timeseries(species, day, 'speed'), streams=[species_stream, day_stream])
+ts_lat = hv.DynamicMap(lambda species: timeseries(species, 'lat'), streams=[species_stream])
+ts_speed = hv.DynamicMap(lambda species: timeseries(species, 'speed'), streams=[species_stream])
 table = hv.DynamicMap(daily_table, streams=[species_stream, day_stream])
 
 def on_map_select(index):
@@ -153,15 +157,16 @@ dashboard = pn.Column(
                     '**Day of Year**', day,
                     '**Species**:',
                      'This selector does not affect the map. Use plot selectors.', species,
-                    '**Toggle Air Temp on and off**', toggle,
+                    toggle,
+                    highlight,
                     'This reset button only resets widgets - otherwise use the plot reset 🔄',
                     reset_button
                 ),
-                pn.Spacer(width=120),
+                pn.Spacer(width=100),
             ),
             pn.Row(pn.layout.Tabs(('Latitude', ts_lat), ('Speed', ts_speed))),
         ),
-        pn.Column(table.options(width=300, height=900))
+        pn.Column(table.options(width=300, height=850))
     )
 )
 dashboard.servable()

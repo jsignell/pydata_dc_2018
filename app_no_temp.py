@@ -44,25 +44,24 @@ species_cmap = dict(zip(df.species.cat.categories,
                          for _, row in colors.iterrows()]))
 
 birds = df.hvplot.points('lon', 'lat', color='species', groupby='day', geo=True,
-                         cmap=species_cmap, legend=False).options(tools=['tap', 'hover', 'box_select'],
-                                                                  width=400, height=600)
+                         cmap=species_cmap, legend=False, width=400, height=600,
+                         size=100).options(tools=['tap', 'hover', 'box_select'])
 
 tiles = gts.EsriImagery()
 tiles.extents = df.lon.min(), df.lat.min(), df.lon.max(), df.lat.max()
 
-def timeseries(species=None, day=None, y='lat'):
+def timeseries(species=None, y='lat'):
+    data = df[df.species.isin(species)] if species else df
     plots = [
-        (df.groupby(['day', 'species'], observed=True)[y]
+        (data.groupby(['day', 'species'], observed=True)[y]
             .mean()
             .groupby('day').agg([np.min, np.max])
             .hvplot.area('day', 'amin', 'amax', alpha=0.2, fields={'amin': y}))]
-    if not species:
-        plots.append(df.groupby('day')[y].mean().hvplot().relabel('mean'))
+    if not species or len(species) > 7:
+        plots.append(data.groupby('day')[y].mean().hvplot().relabel('mean'))
     else:
-        gb = df[df.species.isin(species)].groupby('species', observed=True)
+        gb = data.groupby('species', observed=True)
         plots.extend([v.hvplot('day', y, color=species_cmap[k]).relabel(k) for k, v in gb])
-    if day:
-        plots.append(hv.VLine(day).options(color='black'))
     return hv.Overlay(plots).options(width=900, height=250, toolbar='below', legend_position='right', legend_offset=(20, 0), label_width=150)
 
 def daily_table(species=None, day=None):
@@ -74,20 +73,28 @@ def daily_table(species=None, day=None):
 
 species = pn.widgets.MultiSelect(options=df.species.cat.categories.tolist(), size=10)
 day = pn.widgets.Player(value=1, start=1, end=365, step=5, loop_policy='loop', name='day', width=350)
+highlight = pn.widgets.Toggle(name='Highlight Birds', active=False)
 
 species_stream = Params(species, ['value'], rename={'value': 'species'})
 day_stream = Params(day, ['value'], rename={'value': 'day'})
+highlight_stream = Params(highlight, ['active'])
 
 def reset(arg=None):
     day_stream.update(value=1)
     species_stream.update(value=[])
+    highlight_stream.update(active=False)
 
 reset_button = pn.widgets.Button(name='Reset')
 reset_button.param.watch(reset, 'clicks')
 
-bird_dmap = birds.clone(streams=[day_stream])
-ts_lat = hv.DynamicMap(lambda species, day: timeseries(species, day, 'lat'), streams=[species_stream, day_stream])
-ts_speed = hv.DynamicMap(lambda species, day: timeseries(species, day, 'speed'), streams=[species_stream, day_stream])
+def do_highlight(points, active=True):
+    return points.options(line_alpha=(0.5 if active else 0), selection_line_alpha=active)
+
+bird_dmap = hv.util.Dynamic(birds.clone(streams=[day_stream]).options(line_color='white'),
+                            operation=do_highlight, streams=[highlight_stream])
+
+ts_lat = hv.DynamicMap(lambda species: timeseries(species, 'lat'), streams=[species_stream])
+ts_speed = hv.DynamicMap(lambda species: timeseries(species, 'speed'), streams=[species_stream])
 table = hv.DynamicMap(daily_table, streams=[species_stream, day_stream])
 
 def on_map_select(index):
@@ -109,15 +116,16 @@ dashboard = pn.Column(
                 pn.Column(
                     '**Day of Year**', day,
                     '**Species**:',
-                     'This selector does not affect the map. Use plot selectors.', species,
+                    'This selector does not affect the map. Use plot selectors.', species,
+                    highlight,
                     'This reset button only resets widgets - otherwise use the plot reset 🔄',
                     reset_button
                 ),
-                pn.Spacer(width=120),
+                pn.Spacer(width=100),
             ),
             pn.Row(pn.layout.Tabs(('Latitude', ts_lat), ('Speed', ts_speed))),
         ),
-        pn.Column(table.options(width=300, height=900))
+        pn.Column(table.options(width=300, height=850))
     )
 )
 dashboard.servable()
