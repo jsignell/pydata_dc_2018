@@ -10,6 +10,7 @@ import hvplot.xarray
 import holoviews as hv
 from holoviews.streams import Selection1D, Params
 import panel as pn
+import colorcet as cc
 
 import geoviews as gv
 import geoviews.tile_sources as gts
@@ -43,10 +44,7 @@ def calculate_speed(v):
 
 df = pd.concat([calculate_speed(fill_day(v)) for k, v in df.groupby('species')])
 
-colors = pd.read_csv('./assets/colormap.csv', header=None, names=['R', 'G', 'B'])
-species_cmap = dict(zip(df.species.cat.categories,
-                        ['#{row.R:02x}{row.G:02x}{row.B:02x}'.format(row=row)
-                         for _, row in colors.iterrows()]))
+species_cmap = dict(zip(df.species.cat.categories, cc.glasbey))
 
 birds = df.hvplot.points('lon', 'lat', color='species', groupby='day', geo=True,
                          cmap=species_cmap, legend=False, width=400, height=600,

@@ -10,7 +10,7 @@ platforms:
 env_specs:
   anaconda50_py36:
     channels:
-    - https://conda.anaconda.org/pyviz/label/dev
+    - https://conda.anaconda.org/pyviz
     - https://conda.anaconda.org/intake
     - https://conda.anaconda.org/anaconda
     - defaults
@@ -18,16 +18,16 @@ env_specs:
     - notebook
     - jupyter
     - ipywidgets=7.4.2
-    - bokeh=1.0.0
+    - bokeh=1.1.0rc1
     - python=3.6
     - pandas=0.23.4
-    - param=1.8.2a1
-    - panel=0.2.0a8
-    - holoviews=1.11.0a10
-    - geoviews=1.6.0a2
-    - hvplot=0.3.0a5
+    - param=1.9.0
+    - panel=0.5.0
+    - holoviews=1.12.0
+    - geoviews=1.6.2
+    - hvplot=0.4.0
     - xarray
-    - intake=0.2.9
+    - intake
 commands:
   notebook_app:
     description: Bird Migration app
